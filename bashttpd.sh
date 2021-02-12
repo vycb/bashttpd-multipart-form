@@ -72,40 +72,38 @@
 	###
 	###########################################################################
 	#############################################################################}}}
-	. /home/Progs/bashruntime.sh
-	# debugging=1
-	### CHANGE THIS TO WHERE YOU WANT THE CONFIGURATION FILE TO RESIDE
-	declare -r BASHTTPD_CONF="/home/Progs/bashttpd.conf"
+# 	. /home/Progs/bashruntime.sh
+. CGIBa.sh
 
-	### CHANGE THIS IF YOU WOULD LIKE TO LISTEN ON A DIFFERENT PORT
-	declare -i LISTEN_PORT=8080
+ ## If you are on AIX, IRIX, Solaris, or a hardened system redirecting to /dev/random will probably break, you can change it to /dev/null.
+ declare -ag DUMP_DEV="/dev/random" \
+  RESPONSE_HEADERS=( #{{{
+ "Date: $DATE"
+ "Expires: $DATE"
+ "Server: Slash Bin Slash Bash"
+ ) REQUEST_HEADERS
+#}}}
 
- ## If you are on AIX, IRIX, Solaris, or a hardened system redirecting
- ## to /dev/random will probably break, you can change it to /dev/null.
- declare -a DUMP_DEV="/dev/random"
-
- ## Just base64 encode your favorite favicon and change this to whatever you want.{{{
- declare -r FAVICON="AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAADg4+3/srjc/5KV2P+ortn/xMrj/6Ch1P+Vl9f/jIzc/3572f+CgNr/fnzP/3l01f+Ih9r/h4TZ/8fN4//P1Oj/3uPr/7O+1v+xu9X/u8XY/9bi6v+UmdD/XV26/3F1x/+GitT/VVXC/3x/x/+HjNT/lp3Z/6633f/E0eD/2ePr/+bt8v/U4+v/0uLp/9Xj6//Z5e3/oKbX/0pJt/9maML/cHLF/3p8x//T3+n/3Ofu/9vo7//W5Oz/0uHq/9zn7f/j6vD/1OLs/8/f6P/R4Oj/1OPr/7jA4f9KSbf/Skm3/3p/yf/U4ez/1ePq/9rn7//Z5e3/0uHp/87e5//a5Ov/5Ovw/9Hf6v/T4uv/1OLp/9bj6/+kq9r/Skq3/0pJt/+cotb/zdnp/9jl7f/a5u//1+Ts/9Pi6v/O3ub/2uXr/+bt8P/Q3un/0eDq/9bj7P/Z5u7/r7jd/0tKt/9NTLf/S0u2/8zW6v/c5+//2+fv/9bj6//S4un/zt3m/9zm7P/k7PD/1OPr/9Li7P/V5Oz/2OXt/9jl7v+HjM3/lZvT/0tKt/+6w+L/2ebu/9fk7P/V4+v/0uHq/83d5v/a5ev/5ezw/9Pi6v/U4+z/1eXs/9bj6//b5+//vsjj/1hYvP9JSLb/horM/9nk7P/X5e3/1eTs/9Pi6v/P3uf/2eXr/+Tr7//O3+n/0uLr/9Xk7P/Y5e3/w8/k/7XA3/9JR7f/SEe3/2lrw//G0OX/1uLr/9Xi7P/T4ev/0N/o/9zn7f/k7PD/zN3p/8rd5v/T4ur/1ePt/5We0/+0w9//SEe3/0pKt/9OTrf/p7HZ/7fD3//T4uv/0N/o/9Hg6f/d5+3/5ezw/9Li6//T4uv/2ubu/8PQ5f9+hsr/ucff/4eOzv+Ei8z/rLja/8zc6P/I1+b/0OLq/8/f6P/Q4Oj/3eft/+bs8f/R4On/0+Lq/9Tj6v/T4Ov/wM7h/9Df6f/M2uf/z97q/9Dg6f/Q4On/1OPr/9Tj6//S4ur/0ODp/93o7f/n7vH/0N/o/8/f5//P3+b/2OXt/9zo8P/c6fH/zdjn/7fB3/+3weD/1eLs/9nn7//V5Oz/0+Lr/9Pi6//e6O7/5u3x/9Pi6v/S4en/0uLp/9Tj6//W4+v/3Ojw/9rm7v9vccT/wcvm/9rn7//X5Oz/0uHq/9Hg6f/S4er/3uju/+bt8f/R4On/0uHp/9Xk6//Y5u7/1OTs/9bk7P/W5Ov/XFy9/2lrwf/a5+//1uPr/9Pi6v/U4er/0eHq/93o7v/v8vT/5ezw/+bt8f/o7vL/6e/z/+jv8v/p7/L/6e/y/9XZ6//IzOX/6e7y/+nv8v/o7vL/5+7x/+ft8f/r8PP/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==" #}}}
-
- declare -i DEBUG=0
- declare -i VERBOSE=
- declare -a REQUEST_HEADERS
- declare    REQUEST_URI=""
- declare -a HTTP_RESPONSE=(
- [200]="OK"
+ declare -Ag HTTP_RESPONSE=(
+ [200]="OK" #{{{
  [400]="Bad Request"
  [403]="Forbidden"
  [404]="Not Found"
  [405]="Method Not Allowed"
- [500]="Internal Server Error")
- declare DATE=$(date +"%a, %d %b %Y %H:%M:%S %Z")
- declare -a RESPONSE_HEADERS=(
- "Date: $DATE"
- "Expires: $DATE"
- "Server: Slash Bin Slash Bash"
- )
+ [500]="Internal Server Error"
+	) _REQUEST_HEADERS _GET _POST #}}}
+ declare REQUEST_URI="" \
+  DATE=$(date +"%a, %d %b %Y %H:%M:%S %Z")\
+  QUERY_STRING POST_DATA REQUEST_METHOD
 
-warn() { ((${VERBOSE})) && echo "WARNING: $@" >&2; }
+	## Just base64 encode your favorite favicon and change this to whatever you want.{{{
+	declare -r FAVICON="AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAAMIOAADCDgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAxLXMAKCI9Aj88li05OK6UPDu35x0cp+YMC6GRGxmWK2RcWgI1MYQAAAAAAAAAAAAAAAAAAAAAACIdfQAFAEwBPTqVIzo5rXwsK7/XFBTO/B4dxf8JCav/AACp/AQEptUPDaB5HBiWIUA8hQEnI5IAAAAAAAAAXAE7OJMeOTirdSwrvtQWFc38BATU/wAA1f8YGMT/CQmr/yQkr/8nJ7H/AQOo+wcJpdEOC6FyHhyUHVFJdgFCQKRdMjG8zBkZzPsFBdT/AADU/wAA1P8AANX/GRjF/xERrP96esH/iYjK/xInpP8OQpD/Bxih+ggGpsoVE5xZMjG96goK0/8AANT/AADU/wAA1P8AANT/AADV/xkYxf8NDav/VFS5/7Oy1v8+QbL/BiKb/wcenP8AAKv/Bgam6Cgoxf8AANX/AADU/wAA1P8AANT/AADU/wAA1f8YF8T/FhWt/5+ez/+Fhcv/GBit/wAAqv8AAKr/AACq/wEBqP8mJsP/AADU/wAA1P8AANT/AADU/wAA1P8AANX/GRjE/wgIqv9YWLr/k5PL/w8OrP8AAKr/AACq/wAAqv8BAaf/JSTD/wAA1P8AANT/AADU/wAA1P8AANT/AADU/xsbyf8TE63/ERCq/ywssf8CAqr/AACq/wAAqv8AAKr/AQGn/yUkwv8AANT/AADU/wAA1P8AANT/AADU/wAA1P8HB9P/IyPE/xwcsv8GBqr/AACq/wAAqv8AAKr/AACq/wEBp/8mJsP/AADU/wAA1P8AANT/AADU/wAA1P8AANT/AADU/wMD1P8VFM//JCPA/xgXsP8FBar/AACq/wAAqv8BAaj/KinE/wAA1P8AANT/AADU/wAA1P8AANT/AADU/wAA1P8AANT/AADU/wQE1P8WFs3/IyO9/xUUrv8DA6r/AQGo/zIyvvIHB9T/AADU/wAA1P8AANT/AADU/wAA1P8AANT/AADU/wAA1P8AANT/AADU/wcH1P8aGsz/Jia8/ycnq/BEQqp3Ly7C4BMTz/4DA9T/AADU/wAA1P8AANT/AADU/wAA1P8AANT/AADU/wAA1P8CAtT/ExPP/jQzwN5IR6ZxJCFkBEE/nDE+PbKTLCzE5RIS0P8CAtT/AADU/wAA1P8AANT/AADU/wMD1P8TEtD+KSjD4zo5sY8/PZsvHBpeAwAAAAA+O4YANDJ2BkE/nzc6ObOZKinF6BER0f8CAtT/AgLU/xIR0P4qKcTmOjmzlUA9nTQ0MXIFPTqDAAAAAAAAAAAAAAAAAAAAAAA8OYsAMi9/CD89oEY6ObW1KyrF+yoqxfo4N7SxPjyfQjMwfQc8OooAAAAAAAAAAAAAAAAA8A8AAMADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAwAA8A8AAA=="
+	### CHANGE THIS TO WHERE YOU WANT THE CONFIGURATION FILE TO RESIDE #}}}
+	declare -r BASHTTPD_CONF="/home/Progs/bashttpd/bashttpd.conf"\
+	FAVICON_LINK="<link href=\"data:image/x-icon;base64,${FAVICON}\" rel=\"icon\" type=\"image/x-icon\"/>"\
+	MAX_UPLOAD_SIZE=1024000 UPLOADDIR=/tmp
+
+warn(){ ((${VERBOSE})) && echo "WARNING: $@" >&2; }
 
 chk_conf_file() {
 		[ -r "${BASHTTPD_CONF}" ] || { #{{{
@@ -204,18 +202,19 @@ EOF
 	}
 } #}}}
 
-recv() { ((${VERBOSE})) && echo "< $@" >&2; }
+recv(){ ((${VERBOSE})) && echo "< $@" >&2; }
 
-send() { ((${VERBOSE})) && echo "> $@" >&2; echo "$*"; }
+send(){ ((${VERBOSE})) && echo "> $@" >&2; echo "$*"; }
 
-add_response_header() { RESPONSE_HEADERS+=("$1: $2"); }
+add_response_header(){ RESPONSE_HEADERS+=("$1: $2"); }
 
-send_response_binary() {
+send_response_binary(){
 	local code="$1" #{{{
 	local file="${2}"
 	local transfer_stats=""
 	local tmp_stat_file="/tmp/_send_response_$$_"
 	send "HTTP/1.0 $1 ${HTTP_RESPONSE[$1]}"
+	debug $FUNCNAME:file=$file:$1:HTTP_RESPONSE=${HTTP_RESPONSE[$1]}:"${RESPONSE_HEADERS[@]}":
 	for i in "${RESPONSE_HEADERS[@]}"; do
 		send "$i"
 	done
@@ -230,9 +229,18 @@ send_response_binary() {
 		## Use dd since it handles null bytes
 		dd 2>"${DUMP_DEV}" < "${file}"
 	fi
-} #}}}
+} #}}}send_response_binary
 
-send_response() {
+send_redirect(){
+	local code="$1" #{{{
+	send "HTTP/1.0 $1 ${HTTP_RESPONSE[$1]}"
+	for i in "${RESPONSE_HEADERS[@]}"; do
+		send "$i"
+	done
+	send
+} #}}}send_redirect
+
+send_response(){
 	local code="$1" #{{{
 	send "HTTP/1.0 $1 ${HTTP_RESPONSE[$1]}"
 	for i in "${RESPONSE_HEADERS[@]}"; do
@@ -244,37 +252,85 @@ send_response() {
 	done
 } #}}}
 
-send_response_ok_exit() { send_response 200; exit 0; }
+send_response_ok_exit(){ send_response 200; exit 0; }
 
-send_response_ok_exit_binary() { send_response_binary 200  "${1}"; exit 0; }
+send_response_location_exit(){ add_response_header 'Location' "$1";  send_redirect 301; exit 0; }
 
-fail_with() { send_response "$1" <<< "$1 ${HTTP_RESPONSE[$1]}"; exit 1; }
+send_response_ok_exit_binary(){ send_response_binary 200  "${1}"; exit 0; }
+
+fail_with(){ send_response "$1" <<< "$1 ${HTTP_RESPONSE[$1]}"; exit 1; }
+
+serve_file() {
+	#{{{
+	local file="$1" funcname\
+	 CONTENT_TYPE='' PROC
+	case "${file}" in
+		*.css)
+			CONTENT_TYPE="text/css"
+			;;
+		*.ico)
+			CONTENT_TYPE="image/x-icon"
+			;;
+		*.txt)
+			CONTENT_TYPE="text/plain"
+			;;
+		*.sh*|*.sh?\?=*|*.cgi*)
+			CONTENT_TYPE="text/html"
+			PROC=cgi
+			file=${file%%\?*}
+			funcname=${file%%.*}
+			;;
+		*.text|*.md)
+			CONTENT_TYPE="text/html"
+			PROC=markdown
+			;;
+		*.js)
+			CONTENT_TYPE="text/javascript"
+			;;
+		*)
+			CONTENT_TYPE=$(file -b --mime-type "${file}")
+# 			debug serve_file :@=$@:file=$file:${BASH_REMATCH[@]}:BR1=${BASH_REMATCH[1]}:ARG1=${1}:ARG2=${2}:
+			# CONTENT_TYPE="application/octet-stream"
+			;;
+	esac
+# 	[ "$PROC" != cgi ] &&
+		add_response_header 'Content-Type'  "${CONTENT_TYPE}"
+# 	CONTENT_LENGTH=$(stat -c'%s' "${file}")
+# 	add_response_header "Content-Length" "${CONTENT_LENGTH}"
+	case $PROC in
+		markdown)
+			markdown "${file}" |send_response_ok_exit  ;;
+		cgi)
+			source "${file}"
+			[[ "$(LC_ALL=C type -t ${funcname}main)" == 'function' ]] && {
+				[[ -n ${_GET[postdat]} ]] && {
+					POST_DATA=${_GET[postdat]}
+					parsePOST
+				}
+				"${funcname}main" |send_response_ok_exit
+
+			} || {
+				"${funcname}sendpost"
+			}
+			;;
+		*)
+			# add_response_header "Content-Disposition: attachment"
+			send_response_ok_exit_binary "${file}" ;;
+	esac
+:<<'CMNT'
+	{{{
 
 serve_cgi_file() {
 	#{{{
 	local file="$1"\
 	CONTENT_TYPE="" PROC=cgi
 	case "${file}" in
-		*\.css)
-			CONTENT_TYPE="text/css"
-			;;
-		*\.txt)
-			CONTENT_TYPE="text/plain"
-			;;
-		*\.text|*\.md|.md)
-			CONTENT_TYPE="text/html"
-			PROC=markdown
-			;;
-		*\.cgi|*\.sh|*.sh)
+		*.cgi|*.sh|*\.sh)
 			CONTENT_TYPE="text/html"
 			PROC=cgi
 			;;
-		*\.js)
-			CONTENT_TYPE="text/javascript"
-			;;
 		*)
 			CONTENT_TYPE=$(file -b --mime-type "${file}")
-			debug serve_file :@=$@:file=$file:${BASH_REMATCH[@]}:BR1=${BASH_REMATCH[1]}:ARG1=${1}:ARG2=${2}:
 			# CONTENT_TYPE="application/octet-stream"
 			;;
 	esac
@@ -286,79 +342,55 @@ serve_cgi_file() {
 # 		markdown)
 # 			markdown "${file}" |send_response_ok_exit  ;;
 		cgi|*)
-			bash "${file}" |send_response_ok_exit  ;;
+			"${file}" |send_response_ok_exit  ;;
 		*)
 			# add_response_header "Content-Disposition: attachment"
 			send_response_ok_exit_binary "${file}" ;;
 	esac
 } #}}}
 
-serve_file() {
-	#{{{
-	local file="$1"\
-	 CONTENT_TYPE="" PROC=cgi
-	case "${file}" in
-		*\.css)
-			CONTENT_TYPE="text/css"
-			;;
-		*\.txt)
-			CONTENT_TYPE="text/plain"
-			;;
-		*\.text|*\.md|*\.sh|.md)
-			CONTENT_TYPE="text/html"
-			PROC=markdown
-			;;
-		*\.cgi|*\.sh|*.sh)
-			CONTENT_TYPE="text/html"
-			PROC=cgi
-			;;
-		*\.js)
-			CONTENT_TYPE="text/javascript"
-			;;
-		*)
-			CONTENT_TYPE=$(file -b --mime-type "${file}")
-			debug serve_file :@=$@:file=$file:${BASH_REMATCH[@]}:BR1=${BASH_REMATCH[1]}:ARG1=${1}:ARG2=${2}:
-			# CONTENT_TYPE="application/octet-stream"
-			;;
-	esac
-	add_response_header "Content-Type"  "${CONTENT_TYPE}"
-	CONTENT_LENGTH=$(stat -c'%s' "${file}")
-	add_response_header "Content-Length" "${CONTENT_LENGTH}"
-	## Use binary safe transfer method since text doesn't break.
-	case $PROC in
-		markdown)
-			markdown "${file}" |send_response_ok_exit  ;;
-		cgi)
-			bash "${file}" |send_response_ok_exit  ;;
-		*)
-			# add_response_header "Content-Disposition: attachment"
-			send_response_ok_exit_binary "${file}" ;;
-	esac
-} #}}}
+}}}
+CMNT
+} #}}}serve_file
 
 serve_dir_with_tree() {
 	local dir="$1" tree_vers tree_opts basehref x #{{{
 	## HTML 5 compatible way to avoid tree html from generating favicon
 	## requests in certain browsers, such as browsers in android smartwatches. =)
-	local no_favicon=" <link href=\"data:image/x-icon;base64,${FAVICON}\" rel=\"icon\" type=\"image/x-icon\" />"
-	local tree_page=""
-	local base_server_path="${2%*/}"
+	local tree_page="" \
+	 base_server_path="${2%*/}"
 	[ "$base_server_path" = "/" ] && base_server_path=".."
 	local tree_opts="--du -h -a --dirsfirst"
 	add_response_header "Content-Type" "text/html"
 	# The --du option was added in 1.6.0.   "/${2%/*}"
 	read _ tree_vers x < <(tree --version)
 	tree_page=$(tree -H "$base_server_path" -L 1 "${tree_opts}" -D "${dir}")
-	tree_page=$(sed "5 i ${no_favicon}" <<< "${tree_page}")
-	[[ "${tree_vers}" == v1.6* ]]
+	tree_page=$(sed "5 i ${FAVICON_LINK}" <<< "${tree_page}")
+# 	[[ "${tree_vers}" == v1.6* ]]
 	send_response_ok_exit <<< "${tree_page}"
 } #}}}
 
 serve_dir_with_ls() {
-	local dir="$1" #{{{
-	add_response_header "Content-Type" "text/plain"
-	send_response_ok_exit < \
-		<(ls -la "${dir}")
+	#{{{
+	add_response_header "Content-Type" "text/html"
+	 dir="$1"
+	send_response_ok_exit < <(cat <<EOF
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+	<title>~$USER on bashttpd</title>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	${FAVICON_LINK}
+	</head>
+<body id="body" class="dark-mode">
+<pre>
+$(ls -latr "${dir}/")
+</pre>
+</body>
+</html>
+EOF
+)
+return 0
 	} #}}}
 
 serve_dir() {
@@ -367,32 +399,12 @@ serve_dir() {
 	which tree &>"${DUMP_DEV}" && \
 		serve_dir_with_tree "$@"
 
-	serve_dir_with_ls "$@"
-	fail_with 500
+	 serve_dir_with_ls "$@"
+	#fail_with 500
 } #}}}
 
 urldecode(){
 		[ "${1%/}" = "" ] && echo "/" ||  echo -e "$(sed 's/%\([[:xdigit:]]\{2\}\)/\\\x\1/g' <<< "${1%/}")"; #{{{
-} #}}}
-
-serve_dir_with_cgi(){
-	local URL_PATH="${1}/${3}" ext='text' #{{{
-	shift
-	URL_PATH=$(urldecode "${URL_PATH}")
-	[[ $URL_PATH == *..* ]] && fail_with 400
-	# Serve index file if exists in requested directory
-# 	for ext in 'md' 'text' 'txt' 'html'; do
-		[ -f "${URL_PATH}" -a -e "${URL_PATH}" -a -r "${URL_PATH}" ] && \
-			URL_PATH="${URL_PATH}"
-# 	done
-	if [[ -f "${URL_PATH}" ]]; then
-		[[ -r "${URL_PATH}" ]] && \
-			serve_file "${URL_PATH}" "$@" || fail_with 403
-	elif [[ -d "${URL_PATH}" ]]; then
-		[[ -x "${URL_PATH}" ]] && \
-			serve_dir  "${URL_PATH}" "$@" || fail_with 403
-	fi
-	fail_with 404
 } #}}}
 
 serve_dir_or_file_from(){
@@ -408,7 +420,7 @@ serve_dir_or_file_from(){
 	if [[ -f "${URL_PATH}" ]]; then
 		[[ -r "${URL_PATH}" ]] && \
 			serve_file "${URL_PATH}" "$@" || fail_with 403
-	elif [[ -d "${URL_PATH}" ]]; then
+	elif [ -d "${URL_PATH}" -o -L "${URL_PATH}"  ]; then
 		[[ -x "${URL_PATH}" ]] && \
 			serve_dir  "${URL_PATH}" "$@" || fail_with 403
 	fi
@@ -420,20 +432,69 @@ serve_static_string(){
 	send_response_ok_exit <<< "$1"
 } #}}}
 
-on_uri_match() {
-		local regex="$1" #{{{
-		shift
-		[[ ${REQUEST_URI} =~ $regex ]] && \
-			"$@" "${BASH_REMATCH[1]}"
-} #}}}
-
 unconditionally(){ "$@" "$REQUEST_URI"; }
 
+on_uri_match() {
+	local regex="$1" key #{{{
+	shift
+	if [[ ${REQUEST_URI} =~ $regex ]];then
+# 		QUERY_STRING="${BASH_REMATCH[1]}"
+		"$@" "${BASH_REMATCH[1]}"
+
+		debug $FUNCNAME POST_DATA=$POST_DATA REQUEST_METHOD=$REQUEST_METHOD QUERY_STRING=$QUERY_STRING:REQUEST_URI=${REQUEST_URI}:Content-Length=${_REQUEST_HEADERS[Content-Length]}:@=$@:BASH_REMATCH=${BASH_REMATCH[@]}:
+		for key in "${!_GET[@]}";do
+			debug _GET[$key]=${_GET[$key]}
+		done
+
+		debug _POST="${_POST[@]}" length=${#_POST[@]}
+		for item in ${!_POST[@]}; do
+			echo field=$item value=${_POST[$item]}
+		done
+
+	else
+		:
+# 		debug $FUNCNAME NO REQUEST_METHOD=$REQUEST_METHOD QUERY_STRING=$QUERY_STRING:REQUEST_URI=${REQUEST_URI}:@=$@:BASH_REMATCH=${BASH_REMATCH[@]}: #file=$file:${BASH_REMATCH[@]}:BR1=${BASH_REMATCH[1]}:ARG1=${1}:ARG2=${2}:
+	fi
+} #}}}on_uri_match
+
+uploadPOST(){
+#{{{
+	local COUNT URI
+	[ ! "$REQUEST_METHOD" == 'POST' -o -z "${_REQUEST_HEADERS['Content-Length']}" ] && return
+	[[ ${_REQUEST_HEADERS['Content-Length']} -gt $MAX_UPLOAD_SIZE ]] && {
+		USER_MSG='Image too large'
+		} || {
+		POST_DATA=$(date +'%Y%m%d%H%M%S')
+		debug $FUNCNAME: REQUEST_METHOD=$REQUEST_METHOD REQUEST_URI=$REQUEST_URI Content-Length=${_REQUEST_HEADERS['Content-Length']} MAX_UPLOAD_SIZE=$MAX_UPLOAD_SIZE POST_DATA=$POST_DATA UPLOADDIR=$UPLOADDIR
+
+#{{{ 			COUNT=$(awk 'BEGIN{printf "%0.0f", ('"${_REQUEST_HEADERS[Content-Length]}"'/512+1) }')
+#}}} 			dd count=${COUNT-2} of=$UPLOADDIR/$POST_DATA
+		COUNT=${_REQUEST_HEADERS[Content-Length]}
+		dd bs=1 count="${COUNT-2}" of=$UPLOADDIR/$POST_DATA
+	}
+
+	URI=${REQUEST_URI%%=*}
+	send_response_location_exit "${URI}=${POST_DATA}"
+
+} #}}}uploadPOST
+
+parseGET(){
+#{{{
+# 	IFS='=&'
+	IFS='&'
+	local parm_get=($QUERY_STRING) key value
+	IFS=
+	for ((i=0; i<${#parm_get[@]}; i+=1)); do
+		key=${parm_get[i]%=*}
+		value=${parm_get[i]#*=}
+		_GET[$key]=${value}
+# 		_GET[${parm_get[i]}]=$(urldecode ${parm_get[i+1]})
+	done
+} #}}}parseGET
+
 main(){
-	local recv="" #{{{
-	local line=""
-	local REQUEST_METHOD=""
-	local REQUEST_HTTP_VERSION=""
+#{{{
+	local line="" headername headervalue
 	chk_conf_file
 	[[ ${UID} = 0 ]] && warn "It is not recommended to run bashttpd as root."
 	# Request-Line HTTP RFC 2616 $5.1
@@ -443,25 +504,36 @@ main(){
 	read -r REQUEST_METHOD REQUEST_URI REQUEST_HTTP_VERSION <<< "${line}"
 	[ -n "${REQUEST_METHOD}" ] && [ -n "${REQUEST_URI}" ] && \
 		[ -n "${REQUEST_HTTP_VERSION}" ] || fail_with 400
-	# Only GET is supported at this tim
-	[ "${REQUEST_METHOD}" = "GET" ] || fail_with 405
-	while IFS= read -r line; do
+# 	CONTENT_LENGTH=$(stat -c'%s' "${file}")
+	QUERY_STRING="${REQUEST_URI#*\?}"
+	[ "${REQUEST_METHOD}" == POST -o "${REQUEST_METHOD}" == GET ] || fail_with 405
+	debug $FUNCNAME REQUEST_METHOD=$REQUEST_METHOD REQUEST_URI=$REQUEST_URI
+
+	IFS=
+	while read -t 0.1 -r line; do
 		line=${line%%$'\r'}
 		recv "${line}"
 		# If we've reached the end of the headers, break.
 		[ -z "${line}" ] && break
 		REQUEST_HEADERS+=("${line}")
+		IFS=$' :'; read -t 0.1 -r headername headervalue <<<$line; IFS=
+		_REQUEST_HEADERS[$headername]=$headervalue
+# 		debug headername=$headername headervalue=${_REQUEST_HEADERS[$headername]}
 	done
-} #}}}
 
-if [[ ${1} == -s ]]; then # start server with -s
+} #}}}main
+
+[[ ${1} == -s ]] && { # start server with -s
 	# echo ":$0:"
+# 	2>/dev/null
 	socat TCP4-LISTEN:${LISTEN_PORT},fork EXEC:"${0}"
-else
+} || {
 	main
+	parseGET
+	uploadPOST
 	source "${BASHTTPD_CONF}"
-	fail_with 500
-fi
+# 	fail_with 500
+}
 
 :<<'CMNT'
 bashlibhttp(){
@@ -737,3 +809,4 @@ echo "</ul>"
 echo "</body></html>"
 } #}}}
 CMNT
+
