@@ -21,10 +21,10 @@ error_msg(){
 	#{{{
 	echo "<h3 class=error>$@</h3>"
 } #}}}
+
 parsePOST(){
 #{{{
 	local CNT=0 fieldn
-	# :<<'CMNT'
 
 	[ -z "$POST_DATA" -o ! -e $UPLOADDIR/$POST_DATA ] && return
 
@@ -70,8 +70,32 @@ parsePOST(){
 	done<<<$(awk -v PROC="getformfields" -f multipart.awk $UPLOADDIR/$POST_DATA)
 
 
-	# CMNT
 } #}}}parsePOST
+
+urldecode()
+{ #{{{
+		[ "${1%/}" = "" ] && echo "/"||echo -e "$(sed 's/%\([[:xdigit:]]\{2\}\)/\\\x\1/g' <<< "${1%/}")"
+} #}}}
+
+urlencode(){
+	local s="${@//'%'/%25}" #{{{
+	s="${s//' '/%20}"
+	s="${s//'"'/%22}"
+	s="${s//'#'/%23}"
+	s="${s//'$'/%24}"
+	s="${s//'&'/%26}"
+	s="${s//'+'/%2B}"
+	s="${s//','/%2C}"
+	s="${s//'/'/%2F}"
+	s="${s//':'/%3A}"
+	s="${s//';'/%3B}"
+	s="${s//'='/%3D}"
+	s="${s//'?'/%3F}"
+	s="${s//'@'/%40}"
+	s="${s//'['/%5B}"
+	s="${s//']'/%5D}"
+	printf '%s' "$s"
+} #}}}
 
 :<<'CMNT'
 {{{

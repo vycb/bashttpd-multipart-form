@@ -4,9 +4,9 @@ The project extends 'bashttpd' server with multipart form data feature.
 
 
 
-## <a name="license"></a>License
+## License <a name="license"></a>  
 
-All files are released under the MIT License.
+All files are released under the MIT License.  
 
 Individual files contain the following tag instead of the full license text:
 ```

@@ -73,7 +73,14 @@
 	###########################################################################
 	#############################################################################}}}
 # 	. /home/Progs/bashruntime.sh
-. CGIBa.sh
+includefile()
+{ #{{{
+	local dir=$(dirname $(realpath "$0"))
+# 		filename=$(basename "$0")
+	echo "$dir/$*"
+} #}}}
+
+. $(includefile CGIBa.sh)
 
  ## If you are on AIX, IRIX, Solaris, or a hardened system redirecting to /dev/random will probably break, you can change it to /dev/null.
  declare -ag DUMP_DEV="/dev/random" \
@@ -208,13 +215,14 @@ send(){ ((${VERBOSE})) && echo "> $@" >&2; echo "$*"; }
 
 add_response_header(){ RESPONSE_HEADERS+=("$1: $2"); }
 
-send_response_binary(){
-	local code="$1" #{{{
-	local file="${2}"
-	local transfer_stats=""
-	local tmp_stat_file="/tmp/_send_response_$$_"
-	send "HTTP/1.0 $1 ${HTTP_RESPONSE[$1]}"
+send_response_binary()
+{ #{{{
+	local code="$1"\
+	 file="${2}"\
+	 transfer_stats=""\
+	 tmp_stat_file="/tmp/_send_response_$$_"
 	debug $FUNCNAME:file=$file:$1:HTTP_RESPONSE=${HTTP_RESPONSE[$1]}:"${RESPONSE_HEADERS[@]}":
+	send "HTTP/1.0 $1 ${HTTP_RESPONSE[$1]}"
 	for i in "${RESPONSE_HEADERS[@]}"; do
 		send "$i"
 	done
@@ -231,8 +239,9 @@ send_response_binary(){
 	fi
 } #}}}send_response_binary
 
-send_redirect(){
-	local code="$1" #{{{
+send_redirect()
+{ #{{{
+	local code="$1"
 	send "HTTP/1.0 $1 ${HTTP_RESPONSE[$1]}"
 	for i in "${RESPONSE_HEADERS[@]}"; do
 		send "$i"
@@ -240,8 +249,9 @@ send_redirect(){
 	send
 } #}}}send_redirect
 
-send_response(){
-	local code="$1" #{{{
+send_response()
+{ #{{{
+	local code="$1"
 	send "HTTP/1.0 $1 ${HTTP_RESPONSE[$1]}"
 	for i in "${RESPONSE_HEADERS[@]}"; do
 		send "$i"
@@ -293,6 +303,7 @@ serve_file() {
 			# CONTENT_TYPE="application/octet-stream"
 			;;
 	esac
+	debug $FUNCNAME CONTENT_TYPE=$CONTENT_TYPE REQUEST_METHOD=$REQUEST_METHOD REQUEST_URI=$REQUEST_URI
 # 	[ "$PROC" != cgi ] &&
 		add_response_header 'Content-Type'  "${CONTENT_TYPE}"
 # 	CONTENT_LENGTH=$(stat -c'%s' "${file}")
@@ -302,7 +313,7 @@ serve_file() {
 			markdown "${file}" |send_response_ok_exit  ;;
 		cgi)
 			source "${file}"
-			[[ "$(LC_ALL=C type -t ${funcname}main)" == 'function' ]] && {
+			[[ $(LC_ALL=C type -t ${funcname}main) == function ]] && {
 				[[ -n ${_GET[postdat]} ]] && {
 					POST_DATA=${_GET[postdat]}
 					parsePOST
@@ -314,11 +325,28 @@ serve_file() {
 			}
 			;;
 		*)
+			debug $FUNCNAME CONTENT_TYPE=$CONTENT_TYPE REQUEST_METHOD=$REQUEST_METHOD REQUEST_URI=$REQUEST_URI
 			# add_response_header "Content-Disposition: attachment"
 			send_response_ok_exit_binary "${file}" ;;
 	esac
 :<<'CMNT'
 	{{{
+main REQUEST_METHOD=GET REQUEST_URI=/Stena.2017.P.HDRip.1.37Gb_Paradox%26Omskbird.avi
+< Host: localhost:8080
+< Range: bytes=339750912-
+< User-Agent: curl/7.80.0
+< Accept: */*
+< Accept-Encoding: deflate, gzip, zstd
+
+The server responses with the 206 Partial Content status:
+
+HTTP/1.1 206 Partial Content
+Content-Range: bytes 0-1023/146515
+Content-Length: 1024
+...
+(binary content)
+
+
 
 serve_cgi_file() {
 	#{{{
@@ -368,12 +396,12 @@ serve_dir_with_tree() {
 	tree_page=$(sed "5 i ${FAVICON_LINK}" <<< "${tree_page}")
 # 	[[ "${tree_vers}" == v1.6* ]]
 	send_response_ok_exit <<< "${tree_page}"
-} #}}}
+} #}}}serve_dir_with_tree
 
 serve_dir_with_ls() {
 	#{{{
 	add_response_header "Content-Type" "text/html"
-	 dir="$1"
+	dir="$1"
 	send_response_ok_exit < <(cat <<EOF
 <!DOCTYPE html>
 <html lang="en">
@@ -384,45 +412,88 @@ serve_dir_with_ls() {
 	</head>
 <body id="body" class="dark-mode">
 <pre>
-$(ls -latr "${dir}/")
+$(ls -latr "${dir}")
 </pre>
 </body>
 </html>
 EOF
 )
 return 0
-	} #}}}
+} #}}}serve_dir_with_ls
+
+serve_dir_html()
+{	#{{{
+	add_response_header "Content-Type" "text/html"
+	local dir="$1" LIST itemname prndir
+	[[ ${#REQUEST_URI} -gt 1 ]] && [[ $REQUEST_URI != *$DOCROOT* ]] && {
+		prndir="$DOCROOT$REQUEST_URI"
+	} || {
+		prndir="$REQUEST_URI"
+	}
+	debug $FUNCNAME @=$@:dir=$dir:REQUEST_URI=$REQUEST_URI:prndir=$prndir:
+	send_response_ok_exit < <(cat <<EOF
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+	<title>~$USER on bashttpd</title>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<link rel="shortcut icon" href="/favicon.ico" />
+	<style>
+	.rlist{float:right}
+	.main{width:99%}
+	.bold{font-weight:bold}
+	</style>
+	</head>
+<body id="body" class="dark-mode">
+<pre class="main">
+$(
+	while IFS=$' \t' read -ra LINE;do
+		itemname="${LINE[@]:8}"
+		[[ $itemname == *./ ]] && continue
+		printf "%s %s\n" ${LINE[4]} "<a class=\"rlist$([[ ${itemname: -1} = / ]] && echo -n ' bold')\" href=\"$prndir$(urlencode $itemname)\">"${itemname}"</a>"
+
+	done<<<"$(ls -lAhp --group-directories-first "${dir}")"
+)
+</pre>
+</body>
+</html>
+EOF
+)
+return 0
+} #}}}serve_dir_html
 
 serve_dir() {
 	local dir="$1" #{{{
+	shift
+	debug $FUNCNAME dir=$dir:@=$@:
 	# If `tree` is installed, use that for pretty output.
-	which tree &>"${DUMP_DEV}" && \
-		serve_dir_with_tree "$@"
-
-	 serve_dir_with_ls "$@"
-	#fail_with 500
-} #}}}
-
-urldecode(){
-		[ "${1%/}" = "" ] && echo "/" ||  echo -e "$(sed 's/%\([[:xdigit:]]\{2\}\)/\\\x\1/g' <<< "${1%/}")"; #{{{
+	serve_dir_html "$dir/" "$@"
+#{{{ 		which tree &>"${DUMP_DEV}" && serve_dir_with_tree "$@"\
+# 		|| serve_dir_with_ls "$@"
+#}}}fail_with 500
 } #}}}
 
 serve_dir_or_file_from(){
-	local URL_PATH="${1}/${3}" ext='text' #{{{
-	shift
-	URL_PATH=$(urldecode "${URL_PATH}")
+	local URL_PATH="${1:-$DOCROOT}" ext='text' #{{{
+	debug $FUNCNAME 1=$1:@=$@:URL_PATH=$URL_PATH:DOCROOT=$DOCROOT:pwd=$(pwd)
+
+	URL_PATH="$(urldecode "${URL_PATH}")"
+	[[ -n $1 ]] && [[ $1 != *$DOCROOT* ]] && [[ $1 != *favicon.ico* ]] && URL_PATH="${DOCROOT}${URL_PATH}"
+	[[ $1 == *favicon.ico* ]] && URL_PATH="$(includefile $1)"
+
+	debug $FUNCNAME @=$@:URL_PATH=$URL_PATH:
 	[[ $URL_PATH == *..* ]] && fail_with 400
-	# Serve index file if exists in requested directory
 	for ext in 'md' 'text' 'txt' 'html'; do
-		[[ -d "${URL_PATH}" && -e "${URL_PATH}/index.$ext" && -r "${URL_PATH}/index.$ext" ]] && \
+		[ -d "${URL_PATH}" -a -e "${URL_PATH}/index.$ext" -a -r "${URL_PATH}/index.$ext" ] && {
 			URL_PATH="${URL_PATH}/index.$ext"
+			break
+		}
 	done
-	if [[ -f "${URL_PATH}" ]]; then
-		[[ -r "${URL_PATH}" ]] && \
+	if [ -f "${URL_PATH}" -a -r "${URL_PATH}" ]; then
 			serve_file "${URL_PATH}" "$@" || fail_with 403
 	elif [ -d "${URL_PATH}" -o -L "${URL_PATH}"  ]; then
-		[[ -x "${URL_PATH}" ]] && \
-			serve_dir  "${URL_PATH}" "$@" || fail_with 403
+		shift
+		serve_dir "${URL_PATH}" $@ || fail_with 403
 	fi
 	fail_with 404
 } #}}}
@@ -433,29 +504,6 @@ serve_static_string(){
 } #}}}
 
 unconditionally(){ "$@" "$REQUEST_URI"; }
-
-on_uri_match() {
-	local regex="$1" key #{{{
-	shift
-	if [[ ${REQUEST_URI} =~ $regex ]];then
-# 		QUERY_STRING="${BASH_REMATCH[1]}"
-		"$@" "${BASH_REMATCH[1]}"
-
-		debug $FUNCNAME POST_DATA=$POST_DATA REQUEST_METHOD=$REQUEST_METHOD QUERY_STRING=$QUERY_STRING:REQUEST_URI=${REQUEST_URI}:Content-Length=${_REQUEST_HEADERS[Content-Length]}:@=$@:BASH_REMATCH=${BASH_REMATCH[@]}:
-		for key in "${!_GET[@]}";do
-			debug _GET[$key]=${_GET[$key]}
-		done
-
-		debug _POST="${_POST[@]}" length=${#_POST[@]}
-		for item in ${!_POST[@]}; do
-			echo field=$item value=${_POST[$item]}
-		done
-
-	else
-		:
-# 		debug $FUNCNAME NO REQUEST_METHOD=$REQUEST_METHOD QUERY_STRING=$QUERY_STRING:REQUEST_URI=${REQUEST_URI}:@=$@:BASH_REMATCH=${BASH_REMATCH[@]}: #file=$file:${BASH_REMATCH[@]}:BR1=${BASH_REMATCH[1]}:ARG1=${1}:ARG2=${2}:
-	fi
-} #}}}on_uri_match
 
 uploadPOST(){
 #{{{
@@ -492,6 +540,33 @@ parseGET(){
 	done
 } #}}}parseGET
 
+on_uri_match() {
+	local request_uri="$(urldecode $REQUEST_URI)" regex="$1" key #{{{
+	shift
+
+	debug $FUNCNAME @=$@:POST_DATA=$POST_DATA REQUEST_METHOD=$REQUEST_METHOD QUERY_STRING=$QUERY_STRING:REQUEST_URI=${REQUEST_URI}:Content-Length=${_REQUEST_HEADERS[Content-Length]}:BASH_REMATCH=${BASH_REMATCH[@]}:
+
+	[[ $request_uri =~ $regex ]] && {
+# 		QUERY_STRING="${BASH_REMATCH[1]}"
+		debug in $FUNCNAME @=$@:BASH_REMATCH[1]=${BASH_REMATCH[1]} POST_DATA=$POST_DATA REQUEST_METHOD=$REQUEST_METHOD QUERY_STRING=$QUERY_STRING:REQUEST_URI=${REQUEST_URI}:Content-Length=${_REQUEST_HEADERS[Content-Length]}:BASH_REMATCH@=${BASH_REMATCH[@]}:
+
+		"$@" "${BASH_REMATCH[1]}"
+
+# 		for key in "${!_GET[@]}";do
+# 			debug $FUNCNAME _GET[$key]=${_GET[$key]}
+# 		done
+
+# 		debug $FUNCNAME _POST="${_POST[@]}" length=${#_POST[@]}
+# 		for item in ${!_POST[@]}; do
+# 			debug $FUNCNAME _POST: field=$item value=${_POST[$item]}
+# 		done
+
+	} || {
+		:
+# 		debug $FUNCNAME NO REQUEST_METHOD=$REQUEST_METHOD QUERY_STRING=$QUERY_STRING:REQUEST_URI=${REQUEST_URI}:@=$@:BASH_REMATCH=${BASH_REMATCH[@]}: #file=$file:${BASH_REMATCH[@]}:BR1=${BASH_REMATCH[1]}:ARG1=${1}:ARG2=${2}:
+	}
+} #}}}on_uri_match
+
 main(){
 #{{{
 	local line="" headername headervalue
@@ -509,8 +584,7 @@ main(){
 	[ "${REQUEST_METHOD}" == POST -o "${REQUEST_METHOD}" == GET ] || fail_with 405
 	debug $FUNCNAME REQUEST_METHOD=$REQUEST_METHOD REQUEST_URI=$REQUEST_URI
 
-	IFS=
-	while read -t 0.1 -r line; do
+	while IFS= read -t 0.1 -r line; do
 		line=${line%%$'\r'}
 		recv "${line}"
 		# If we've reached the end of the headers, break.

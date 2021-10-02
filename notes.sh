@@ -30,7 +30,7 @@ cat<<EOF
 		<meta name="robots" content="noindex">
 		<meta name="description" content="~$USER on envs.net" />
 		<meta name="keywords" content="$USER" />
-		<link rel="shortcut icon" href="favicon.ico" />
+		<link rel="shortcut icon" href="/favicon.ico" />
 		<style>
 			body{ margin:40px; color:#ffff88 !important; background-color:#000}
 			a { color: #55a9dd; text-decoration:none}
