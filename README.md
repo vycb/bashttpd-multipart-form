@@ -2,6 +2,12 @@
 
 The project extends 'bashttpd' server with multipart form data feature.  
 
+ - Features:  
+ 	- directory indexing  
+ 	- resume download  
+ 	- multipart form data  
+ 	- CGI pages  
+ 	- favicon  
 
 
 ## License <a name="license"></a>  
