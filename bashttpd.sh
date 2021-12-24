@@ -93,27 +93,29 @@ includefile()
 
  declare -Ag HTTP_RESPONSE=(
  [200]="OK" #{{{
+ [206]="Partial Content"
  [400]="Bad Request"
  [403]="Forbidden"
  [404]="Not Found"
  [405]="Method Not Allowed"
  [500]="Internal Server Error"
 	) _REQUEST_HEADERS _GET _POST #}}}
- declare REQUEST_URI="" \
+ declare REQUEST_URI=""\
   DATE=$(date +"%a, %d %b %Y %H:%M:%S %Z")\
   QUERY_STRING POST_DATA REQUEST_METHOD
 
 	## Just base64 encode your favorite favicon and change this to whatever you want.{{{
 	declare -r FAVICON="AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAAMIOAADCDgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAxLXMAKCI9Aj88li05OK6UPDu35x0cp+YMC6GRGxmWK2RcWgI1MYQAAAAAAAAAAAAAAAAAAAAAACIdfQAFAEwBPTqVIzo5rXwsK7/XFBTO/B4dxf8JCav/AACp/AQEptUPDaB5HBiWIUA8hQEnI5IAAAAAAAAAXAE7OJMeOTirdSwrvtQWFc38BATU/wAA1f8YGMT/CQmr/yQkr/8nJ7H/AQOo+wcJpdEOC6FyHhyUHVFJdgFCQKRdMjG8zBkZzPsFBdT/AADU/wAA1P8AANX/GRjF/xERrP96esH/iYjK/xInpP8OQpD/Bxih+ggGpsoVE5xZMjG96goK0/8AANT/AADU/wAA1P8AANT/AADV/xkYxf8NDav/VFS5/7Oy1v8+QbL/BiKb/wcenP8AAKv/Bgam6Cgoxf8AANX/AADU/wAA1P8AANT/AADU/wAA1f8YF8T/FhWt/5+ez/+Fhcv/GBit/wAAqv8AAKr/AACq/wEBqP8mJsP/AADU/wAA1P8AANT/AADU/wAA1P8AANX/GRjE/wgIqv9YWLr/k5PL/w8OrP8AAKr/AACq/wAAqv8BAaf/JSTD/wAA1P8AANT/AADU/wAA1P8AANT/AADU/xsbyf8TE63/ERCq/ywssf8CAqr/AACq/wAAqv8AAKr/AQGn/yUkwv8AANT/AADU/wAA1P8AANT/AADU/wAA1P8HB9P/IyPE/xwcsv8GBqr/AACq/wAAqv8AAKr/AACq/wEBp/8mJsP/AADU/wAA1P8AANT/AADU/wAA1P8AANT/AADU/wMD1P8VFM//JCPA/xgXsP8FBar/AACq/wAAqv8BAaj/KinE/wAA1P8AANT/AADU/wAA1P8AANT/AADU/wAA1P8AANT/AADU/wQE1P8WFs3/IyO9/xUUrv8DA6r/AQGo/zIyvvIHB9T/AADU/wAA1P8AANT/AADU/wAA1P8AANT/AADU/wAA1P8AANT/AADU/wcH1P8aGsz/Jia8/ycnq/BEQqp3Ly7C4BMTz/4DA9T/AADU/wAA1P8AANT/AADU/wAA1P8AANT/AADU/wAA1P8CAtT/ExPP/jQzwN5IR6ZxJCFkBEE/nDE+PbKTLCzE5RIS0P8CAtT/AADU/wAA1P8AANT/AADU/wMD1P8TEtD+KSjD4zo5sY8/PZsvHBpeAwAAAAA+O4YANDJ2BkE/nzc6ObOZKinF6BER0f8CAtT/AgLU/xIR0P4qKcTmOjmzlUA9nTQ0MXIFPTqDAAAAAAAAAAAAAAAAAAAAAAA8OYsAMi9/CD89oEY6ObW1KyrF+yoqxfo4N7SxPjyfQjMwfQc8OooAAAAAAAAAAAAAAAAA8A8AAMADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAwAA8A8AAA=="
 	### CHANGE THIS TO WHERE YOU WANT THE CONFIGURATION FILE TO RESIDE #}}}
-	declare -r BASHTTPD_CONF="/home/Progs/bashttpd/bashttpd.conf"\
-	FAVICON_LINK="<link href=\"data:image/x-icon;base64,${FAVICON}\" rel=\"icon\" type=\"image/x-icon\"/>"\
-	MAX_UPLOAD_SIZE=1024000 UPLOADDIR=/tmp
+	declare -r BASHTTPD_CONF="$(includefile bashttpd.conf)"\
+		FAVICON_LINK='<link href="data:image/x-icon;base64,'${FAVICON}'" rel="icon" type="image/x-icon"/>'\
+		MAX_UPLOAD_SIZE=1024000 UPLOADDIR=/tmp
 
 warn(){ ((${VERBOSE})) && echo "WARNING: $@" >&2; }
 
-chk_conf_file() {
-		[ -r "${BASHTTPD_CONF}" ] || { #{{{
+chk_conf_file()
+{ #{{{
+		[ -r "${BASHTTPD_CONF}" ] || {
 			cat >"${BASHTTPD_CONF}" <<'EOF'
 #
 # bashttpd.conf - configuration for bashttpd
@@ -207,7 +209,7 @@ EOF
 	warn "Created bashttpd.conf using defaults.  Please review and configure bashttpd.conf before running bashttpd again."
 	#  exit 1
 	}
-} #}}}
+} #}}}chk_conf_file
 
 recv(){ ((${VERBOSE})) && echo "< $@" >&2; }
 
@@ -215,48 +217,59 @@ send(){ ((${VERBOSE})) && echo "> $@" >&2; echo "$*"; }
 
 add_response_header(){ RESPONSE_HEADERS+=("$1: $2"); }
 
-send_response_binary()
+send_response_headers()
 { #{{{
-	local code="$1"\
-	 file="${2}"\
-	 transfer_stats=""\
-	 tmp_stat_file="/tmp/_send_response_$$_"
-	debug $FUNCNAME:file=$file:$1:HTTP_RESPONSE=${HTTP_RESPONSE[$1]}:"${RESPONSE_HEADERS[@]}":
-	send "HTTP/1.0 $1 ${HTTP_RESPONSE[$1]}"
+	local i
 	for i in "${RESPONSE_HEADERS[@]}"; do
 		send "$i"
 	done
 	send
-	if ((${VERBOSE})); then
-		## Use dd since it handles null bytes
-		dd 2>"${tmp_stat_file}" < "${file}"
+} #}}}send_response_headers
+
+send_response_binary()
+{ #{{{
+	local file="${2}"\
+	 transfer_stats=""\
+	 tmp_stat_file="/tmp/_send_response_$$_"
+	debug $FUNCNAME:file=$file:$1:HTTP_RESPONSE=${HTTP_RESPONSE[$1]}:"${RESPONSE_HEADERS[@]}":
+	[[ ${_REQUEST_HEADERS[Range]+_} ]] && {
+		send "HTTP/1.0 206 ${HTTP_RESPONSE[206]}"
+		send "Content-Range: bytes ${_REQUEST_HEADERS[Range]}"
+		local range=${_REQUEST_HEADERS[Range]%-*}\
+			length=$(wc -c < "$file")
+			send "Content-Length: $((length - range))"
+		range=${range#*=}
+		debug $FUNCNAME range=$range:
+		dd 2>"${tmp_stat_file}" skip=$range bs=1M iflag=skip_bytes < "${file}"
 		transfer_stats=$(<"${tmp_stat_file}")
 		echo -en ">> Transferred: ${file}\n>> $(awk '/copied/{print}' <<< "${transfer_stats}")\n" >&2
 		rm "${tmp_stat_file}"
-	else
-		## Use dd since it handles null bytes
-		dd 2>"${DUMP_DEV}" < "${file}"
-	fi
+	} || {
+		send "HTTP/1.0 $1 ${HTTP_RESPONSE[$1]}"
+		send_response_headers
+		if ((${VERBOSE})); then
+			## Use dd since it handles null bytes
+			dd 2>"${tmp_stat_file}" < "${file}"
+			transfer_stats=$(<"${tmp_stat_file}")
+			echo -en ">> Transferred: ${file}\n>> $(awk '/copied/{print}' <<< "${transfer_stats}")\n" >&2
+			rm "${tmp_stat_file}"
+		else
+			## Use dd since it handles null bytes
+			dd 2>"${DUMP_DEV}" < "${file}"
+		fi
+	}
 } #}}}send_response_binary
 
 send_redirect()
 { #{{{
-	local code="$1"
 	send "HTTP/1.0 $1 ${HTTP_RESPONSE[$1]}"
-	for i in "${RESPONSE_HEADERS[@]}"; do
-		send "$i"
-	done
-	send
+	send_response_headers
 } #}}}send_redirect
 
 send_response()
 { #{{{
-	local code="$1"
 	send "HTTP/1.0 $1 ${HTTP_RESPONSE[$1]}"
-	for i in "${RESPONSE_HEADERS[@]}"; do
-		send "$i"
-	done
-	send
+	send_response_headers
 	while IFS= read -r line; do
 		send "${line}"
 	done
@@ -264,14 +277,14 @@ send_response()
 
 send_response_ok_exit(){ send_response 200; exit 0; }
 
-send_response_location_exit(){ add_response_header 'Location' "$1";  send_redirect 301; exit 0; }
+send_response_location_exit(){ add_response_header 'Location' "$1"; send_redirect 301; exit 0; }
 
 send_response_ok_exit_binary(){ send_response_binary 200  "${1}"; exit 0; }
 
 fail_with(){ send_response "$1" <<< "$1 ${HTTP_RESPONSE[$1]}"; exit 1; }
 
-serve_file() {
-	#{{{
+serve_file()
+{	#{{{
 	local file="$1" funcname\
 	 CONTENT_TYPE='' PROC
 	case "${file}" in
@@ -450,9 +463,9 @@ $(
 	while IFS=$' \t' read -ra LINE;do
 		itemname="${LINE[@]:8}"
 		[[ $itemname == *./ ]] && continue
-		printf "%s %s\n" ${LINE[4]} "<a class=\"rlist$([[ ${itemname: -1} = / ]] && echo -n ' bold')\" href=\"$prndir$(urlencode $itemname)\">"${itemname}"</a>"
+		printf "%s %s\n" ${LINE[4]} "<a class=\"rlist$([[ ${itemname: -1} = / ]] && echo -n ' bold')\" href=\"$prndir$itemname\">$itemname</a>"
 
-	done<<<"$(ls -lAhp --group-directories-first "${dir}")"
+	done<<<"$(ls -lAhp --group-directories-first ${dir})"
 )
 </pre>
 </body>
@@ -496,7 +509,7 @@ serve_dir_or_file_from(){
 		serve_dir "${URL_PATH}" $@ || fail_with 403
 	fi
 	fail_with 404
-} #}}}
+} #}}}serve_dir_or_file_from
 
 serve_static_string(){
 	add_response_header "Content-Type" "text/plain" #{{{
@@ -508,12 +521,12 @@ unconditionally(){ "$@" "$REQUEST_URI"; }
 uploadPOST(){
 #{{{
 	local COUNT URI
-	[ ! "$REQUEST_METHOD" == 'POST' -o -z "${_REQUEST_HEADERS['Content-Length']}" ] && return
+	[ ! "$REQUEST_METHOD" == 'POST' -o -z "${_REQUEST_HEADERS[Content-Length]}" ] && return
 	[[ ${_REQUEST_HEADERS['Content-Length']} -gt $MAX_UPLOAD_SIZE ]] && {
 		USER_MSG='Image too large'
 		} || {
 		POST_DATA=$(date +'%Y%m%d%H%M%S')
-		debug $FUNCNAME: REQUEST_METHOD=$REQUEST_METHOD REQUEST_URI=$REQUEST_URI Content-Length=${_REQUEST_HEADERS['Content-Length']} MAX_UPLOAD_SIZE=$MAX_UPLOAD_SIZE POST_DATA=$POST_DATA UPLOADDIR=$UPLOADDIR
+		debug $FUNCNAME: REQUEST_METHOD=$REQUEST_METHOD REQUEST_URI=$REQUEST_URI Content-Length=${_REQUEST_HEADERS[Content-Length]} MAX_UPLOAD_SIZE=$MAX_UPLOAD_SIZE POST_DATA=$POST_DATA UPLOADDIR=$UPLOADDIR
 
 #{{{ 			COUNT=$(awk 'BEGIN{printf "%0.0f", ('"${_REQUEST_HEADERS[Content-Length]}"'/512+1) }')
 #}}} 			dd count=${COUNT-2} of=$UPLOADDIR/$POST_DATA
@@ -567,8 +580,8 @@ on_uri_match() {
 	}
 } #}}}on_uri_match
 
-main(){
-#{{{
+main()
+{ #{{{
 	local line="" headername headervalue
 	chk_conf_file
 	[[ ${UID} = 0 ]] && warn "It is not recommended to run bashttpd as root."
